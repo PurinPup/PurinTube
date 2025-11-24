@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MiniTube - SkipVids Style</title>
+<title>MiniTube - SkipVids Clone</title>
 <style>
-/* Moving Galaxy Background */
 body {
     font-family: Arial, sans-serif;
     margin:0; padding:0;
@@ -85,11 +84,20 @@ header {
     display:block;
 }
 
-.video-title {
+.video-info {
     padding:10px;
+}
+
+.video-title {
     font-size:16px;
     font-weight:bold;
     color:white;
+}
+
+.video-channel {
+    font-size:14px;
+    color:#ccc;
+    margin-top:5px;
 }
 
 #player-container {
@@ -108,6 +116,7 @@ header {
 
 iframe {
     border-radius:8px;
+    max-width:90%;
 }
 </style>
 </head>
@@ -129,6 +138,10 @@ iframe {
 </div>
 
 <script>
+// === CONFIG ===
+const API_KEY = "AIzaSyA0dB47HuMpQGQqA2ZF8fMLrHAMDEhlPgo"; // <- Replace this with your YouTube Data API key
+const MAX_RESULTS = 12;
+
 // Elements
 const searchButton = document.getElementById('search-button');
 const searchInput = document.getElementById('search-input');
@@ -142,28 +155,29 @@ searchButton.addEventListener('click', async () => {
     const query = searchInput.value.trim();
     if (!query) return;
     results.innerHTML = 'Loading...';
-    
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-    
+
     try {
-        // Use AllOrigins proxy for CORS
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(searchUrl)}`);
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${MAX_RESULTS}&q=${encodeURIComponent(query)}&key=${API_KEY}`);
         const data = await res.json();
-        const html = data.contents;
-        
-        const videoIds = [...html.matchAll(/"videoId":"(.*?)"/g)].map(m => m[1]);
-        const uniqueIds = [...new Set(videoIds)].slice(0, 12); // show 12 results
-        
+
         results.innerHTML = '';
-        uniqueIds.forEach(id => {
+        data.items.forEach(item => {
+            const videoId = item.id.videoId;
+            const title = item.snippet.title;
+            const channel = item.snippet.channelTitle;
+            const thumbnail = item.snippet.thumbnails.high.url;
+
             const card = document.createElement('div');
             card.className = 'video-card';
             card.innerHTML = `
-                <img src="https://img.youtube.com/vi/${id}/hqdefault.jpg" alt="Thumbnail">
-                <div class="video-title">Video</div>
+                <img src="${thumbnail}" alt="Thumbnail">
+                <div class="video-info">
+                    <div class="video-title">${title}</div>
+                    <div class="video-channel">${channel}</div>
+                </div>
             `;
             card.addEventListener('click', () => {
-                videoPlayer.src = `https://www.youtube.com/embed/${id}`;
+                videoPlayer.src = `https://www.youtube.com/embed/${videoId}`;
                 playerContainer.style.display = 'block';
                 window.scrollTo({ top: playerContainer.offsetTop - 20, behavior: 'smooth' });
             });
